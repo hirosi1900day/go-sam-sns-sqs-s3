@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Fan out sample using AWS Lambda, SQS, SNS and Go
+Parameters:
+  FileBucket:
+    Type: String
+    Default: sam2-s3input-hisosi1900day00000
+Resources:
+  WriteExtLambda:
+    Metadata:
+      BuildMethod: go1.x
+      SamResourceId: WriteExtLambda
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: WriteExtLambda
+      Handler: write_ext
+      Runtime: provided.al2
+      Timeout: 10
+      Tracing: Active
+      Architectures:
+      - arm64
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - ForExtLambdaQueue
+              - Arn
+            BatchSize: 10
+  WriteExtLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${WriteExtLambda}
+      RetentionInDays: 1
+  WriteFileNameLambda:
+    Metadata:
+      BuildMethod: go1.x
+      SamResourceId: WriteFileNameLambda
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: WriteFileNameLambda
+      Handler: write_file_name
+      Runtime: provided.al2
+      Timeout: 10
+      Tracing: Active
+      Architectures:
+      - arm64
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - ForFileNameLambdaQueue
+              - Arn
+            BatchSize: 10
+  WriteFileNameLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${WriteFileNameLambda}
+      RetentionInDays: 1
+  NotifierLambda:
+    Metadata:
+      BuildMethod: go1.x
+      SamResourceId: NotifierLambda
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: NotifierLambda
+      Handler: notifier
+      Runtime: provided.al2
+      Timeout: 10
+      Tracing: Active
+      Architectures:
+      - arm64
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic:
+              Ref: S3FileTopic
+  NotifierLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${NotifierLambda}
+      RetentionInDays: 1
+  SQSLambdaSample:
+    Type: AWS::S3::Bucket
+    DependsOn: SNSTopicPolicy
+    Properties:
+      BucketName:
+        Ref: FileBucket
+      NotificationConfiguration:
+        TopicConfigurations:
+        - Topic:
+            Ref: S3FileTopic
+          Event: s3:ObjectCreated:Put
+  ForExtLambdaQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 20
+      MessageRetentionPeriod: 60
+  ForFileNameLambdaQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 20
+      MessageRetentionPeriod: 60
+  SQSPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal: '*'
+          Action: sqs:*
+          Resource: '*'
+          Condition:
+            StringEquals:
+              aws:SourceArn:
+              - Ref: S3FileTopic
+      Queues:
+      - Ref: ForExtLambdaQueue
+      - Ref: ForFileNameLambdaQueue
+  S3FileTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint:
+          Fn::GetAtt:
+          - ForExtLambdaQueue
+          - Arn
+        Protocol: sqs
+      - Endpoint:
+          Fn::GetAtt:
+          - ForFileNameLambdaQueue
+          - Arn
+        Protocol: sqs
+      TopicName: s3-file-topic
+  SNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+      - Ref: S3FileTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: sns:Publish
+          Resource:
+            Ref: S3FileTopic
+          Condition:
+            ArnLike:
+              aws:SourceArn:
+                Fn::Sub: arn:aws:s3:::${FileBucket}
+          Principal:
+            AWS: '*'
