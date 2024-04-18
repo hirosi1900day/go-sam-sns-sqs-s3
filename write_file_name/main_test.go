@@ -2,14 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
 func TestHandler(t *testing.T) {
-	inputJson := readJsonFromFile(t, "../../testdata/s3event.json")
+	inputJson := readJsonFromFile(t, "../testdata/s3event.json")
 	snsEvent := events.SNSEvent{
 		Records: []events.SNSEventRecord{
 			{
@@ -37,7 +37,7 @@ func TestHandler(t *testing.T) {
 }
 
 func readJsonFromFile(t *testing.T, inputFile string) []byte {
-	inputJson, err := ioutil.ReadFile(inputFile)
+	inputJson, err := os.ReadFile(inputFile)
 	if err != nil {
 		t.Errorf("could not open test file. details: %v", err)
 	}

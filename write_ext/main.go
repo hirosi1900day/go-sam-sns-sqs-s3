@@ -39,13 +39,15 @@ func getExtFromMessage(e events.SQSMessage) (string, error) {
 	}
 	log.Printf("SNS message: %s", snsEvent.Message)
 
-	var s3event events.S3Event
 	if !strings.Contains(snsEvent.Message, s3PutEvent) {
 		return "", nil
 	}
+
+	var s3event events.S3Event
 	if err := json.Unmarshal([]byte(snsEvent.Message), &s3event); err != nil {
 		return "", errors.Wrapf(err, "failed to unmarshal: %s", snsEvent.Message)
 	}
+
 	key, err := url.QueryUnescape(s3event.Records[0].S3.Object.Key)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to unescape file name: %s", s3event.Records[0].S3.Object.Key)

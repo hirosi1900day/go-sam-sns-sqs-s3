@@ -31,7 +31,11 @@ func NewClient(c Config) *Client {
 
 func (c Client) PostMessage(message string) error {
 	c.config.Text = message
-	p, _ := json.Marshal(c.config)
+
+	p, err := json.Marshal(c.config)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal message")
+	}
 
 	req, err := http.NewRequest(
 		"POST",

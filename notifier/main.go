@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/toshi0607/s3-sns-sqs-lambda-slack-go-sample/handlers/notifier/slack"
+	"slack-notify/notifier/slack"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
