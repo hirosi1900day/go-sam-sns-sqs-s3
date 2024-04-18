@@ -23,3 +23,5 @@ sam.yml
 
 # dependency
 vendor/
+
+.aws-sam

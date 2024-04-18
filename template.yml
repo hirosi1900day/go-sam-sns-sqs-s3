@@ -2,9 +2,17 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: Fan out sample using AWS Lambda, SQS, SNS and Go
 Parameters:
+  WebhookURL:
+    Type: String
+  Channel:
+    Type: String
+  UserName:
+    Type: String
+  Icon:
+    Type: String
   FileBucket:
     Type: String
-    Defulet: sam-s3input-hisosi1900day00000
+    Default: sam-s3input-hisosi1900day00000
 Resources:
   WriteExtLambda:
     Metadata:
@@ -72,6 +80,12 @@ Resources:
           Properties:
             Topic:
               Ref: S3FileTopic
+      Environment:
+        Variables:
+          WEBHOOK_URL: !Ref WebhookURL
+          CHANNEL: !Ref Channel
+          USER_NAME: !Ref UserName
+          ICON: !Ref Icon
   NotifierLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
