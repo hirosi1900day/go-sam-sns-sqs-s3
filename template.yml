@@ -92,7 +92,7 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${NotifierLambda}
       RetentionInDays: 1
 
-  SQSLambdaSample:
+  S3Bucket:
     Type: AWS::S3::Bucket
     DependsOn: SNSTopicPolicy
     Properties:
@@ -121,9 +121,12 @@ Resources:
         Version: '2012-10-17'
         Statement:
           Effect: Allow
-          Principal: "*"
-          Action: sqs:*
-          Resource: "*"
+          Principal:
+            Service: "sns.amazonaws.com"
+          Action: "sqs:SendMessage"
+          Resource:
+            - !GetAtt ForExtLambdaQueue.Arn
+            - !GetAtt ForFileNameLambdaQueue.Arn
           Condition:
             StringEquals:
               aws:SourceArn:
@@ -156,4 +159,4 @@ Resources:
               ArnLike:
                 aws:SourceArn: !Sub "arn:aws:s3:::${FileBucket}"
             Principal:
-              AWS: '*'
+              Service: "s3.amazonaws.com"
