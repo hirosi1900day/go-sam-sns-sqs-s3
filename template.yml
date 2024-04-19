@@ -50,7 +50,7 @@ Resources:
       Tracing: Active
       Architectures:
         - arm64
-      Role: arn:aws:iam::572919087216:role/lambda-role
+      Policies: AmazonDynamoDBFullAccess 
       Events:
         SQSEvent:
           Type: SQS
