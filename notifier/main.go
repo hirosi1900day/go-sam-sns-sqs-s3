@@ -11,10 +11,6 @@ import (
 
 var client *slack.Client
 
-func main() {
-	lambda.Start(handler)
-}
-
 func init() {
 	client = slack.NewClient(
 		slack.Config{
@@ -24,6 +20,10 @@ func init() {
 			IconEmoji: os.Getenv("ICON"),
 		},
 	)
+}
+
+func main() {
+	lambda.Start(handler)
 }
 
 func handler(snsEvent events.SNSEvent) error {

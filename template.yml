@@ -50,12 +50,17 @@ Resources:
       Tracing: Active
       Architectures:
         - arm64
+      Role: arn:aws:iam::572919087216:role/lambda-role
       Events:
         SQSEvent:
           Type: SQS
           Properties:
             Queue: !GetAtt ForFileNameLambdaQueue.Arn
             BatchSize: 10
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoDBTable
+  
   WriteFileNameLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -160,3 +165,15 @@ Resources:
                 aws:SourceArn: !Sub "arn:aws:s3:::${FileBucket}"
             Principal:
               Service: "s3.amazonaws.com"
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      TableName: MyTable
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
